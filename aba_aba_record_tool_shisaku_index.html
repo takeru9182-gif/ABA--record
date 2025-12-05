@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ABA記録ツール（試作版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #1976d2;
+      --primary-soft: #e3f2fd;
+      --accent: #ffb300;
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --danger: #e53935;
+      --success: #43a047;
+      --text-main: #222;
+      --text-sub: #666;
+      --border-soft: #e0e0e0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+    .app-container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+    .chip-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .chip {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 14px 16px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+      border: 1px solid #e5e7eb;
+    }
+    .card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-title span.emoji {
+      fontサイズ: 18px;
+    }
+    .card-description {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+    }
+    label {
+      font-size: 13px;
+      display: block;
+      margin-top: 6px;
+      margin-bottom: 2px;
+    }
+    input, select {
+      width: 100%;
+      padding: 6px 9px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: #fafafa;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(25,118,210,0.12);
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .row > div {
+      flex: 1;
+      min-width: 150px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 7px 12px;
+      font-size: 13px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: #1976d2;
+      color: #fff;
+    }
+    .btn-outline {
+      background: #fff;
+      color: #1976d2;
+      border: 1px solid #e3f2fd;
+    }
+    .btn-success {
+      background: #43a047;
+      color: white;
+    }
+    .btn-fail {
+      background: #e53935;
+      color: white;
+    }
+    .btn-save {
+      background: #1976d2;
+      color: white;
+      width: 100%;
+      margin-top: 10px;
+      padding: 9px 14px;
+      font-weight: 600;
+    }
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 11px;
+    }
+    .btn-danger {
+      background: #fff5f5;
+      color: #e53935;
+      border: 1px solid #ffcdd2;
+    }
+    .tags-inline {
+      font-size: 12px;
+      min-height: 20px;
+      color: var(--text-sub);
+    }
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 11px;
+      background: #e3f2fd;
+      color: #1976d2;
+      margin: 2px;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      margin-right: 4px;
+      margin-bottom: 2px;
+    }
+    .session-list-item {
+      border-bottom: 1px solid #f0f0f0;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+    .session-meta {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .session-main {
+      margin-top: 2px;
+      color: var(--text-sub);
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .summary-table th, .summary-table td {
+      border: 1px solid #eee;
+      padding: 4px 6px;
+      text-align: center;
+    }
+    .summary-table th {
+      background: #fafafa;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      color: var(--text-sub);
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffb300;
+    }
+    .kpi-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .kpi-card {
+      flex: 1;
+      min-width: 130px;
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 8px 10px;
+      border: 1px solid #e5e7eb;
+    }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 2px;
+    }
+    .kpi-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: #eceff1;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50, #81c784);
+      width: 0%;
+      transition: width 0.2s ease-out;
+    }
+    @media (max-width: 640px) {
+      .card { border-radius: 14px; padding: 12px 12px 14px; }
+      .btn { margin-bottom: 4px; }
+      .btn-save { margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <h1>ABA記録ツール（試作版）</h1>
+    <div class="subtitle">ABA療育セッションの「成功 / 失敗」を記録し、生徒ごとの成長をグラフで可視化するツールです。</div>
+
+    <div class="chip-row">
+      <div class="chip">✅ 10〜15トライアルをサクッと記録</div>
+      <div class="chip">📊 生徒・セクションごとのグラフ</div>
+      <div class="chip">📈 伸び（成長スピード）も自動計算</div>
+    </div>
+
+    <!-- ① 生徒・セクション管理 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="emoji">📚</span>
+          <span>① 生徒・セクションの管理</span>
+        </div>
+      </div>
+      <div class="card-description">
+        まずは、記録対象となる「生徒」と「セクション（ターゲット行動）」を登録します。
+      </div>
+
+      <div class="row">
+        <div>
+          <label>生徒名の追加</label>
+          <div class="row">
+            <div style="flex:2;">
+              <input id="newStudentName" placeholder="例：Aくん">
+            </div>
+            <div style="flex:1; display:flex; align-items:center;">
+              <button class="btn btn-outline" style="width:100%;" onclick="addStudent()">生徒を登録</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label>セクション（ターゲット行動）の追加</label>
+          <div class="row">
+            <div style="flex:2;">
+              <input id="newSectionName" placeholder="例：要求の表出">
+            </div>
+            <div style="flex:1; display:flex; align-items:center;">
+              <button class="btn btn-outline" style="width:100%;" onclick="addSection()">セクションを登録</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>登録済みの生徒</label>
+          <div id="studentList" class="tags-inline"></div>
+          <div class="row" style="margin-top:6px;">
+            <div>
+              <label style="font-size:11px;">生徒削除（＋該当データも削除）</label>
+              <select id="deleteStudentSelect">
+                <option value="">生徒を選択</option>
+              </select>
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+              <button class="btn btn-small btn-danger" onclick="deleteStudentMaster()">生徒を削除</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label>登録済みのセクション</label>
+          <div id="sectionList" class="tags-inline"></div>
+          <div class="row" style="margin-top:6px;">
+            <div>
+              <label style="font-size:11px;">セクション削除（＋該当データも削除）</label>
+              <select id="deleteSectionSelect">
+                <option value="">セクションを選択</option>
+              </select>
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+              <button class="btn btn-small btn-danger" onclick="deleteSectionMaster()">セクションを削除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② セッション記録 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="emoji">✏️</span>
+          <span>② セッションを記録</span>
+        </div>
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>現場で使うメイン画面</span>
+        </div>
+      </div>
+      <div class="card-description">
+        生徒とセクションを選び、トライアルごとに「成功 / 失敗」を押していくだけで記録できます。
+      </div>
+
+      <div class="row">
+        <div>
+          <label>生徒を選択</label>
+          <select id="childSelect">
+            <option value="">生徒を選択してください</option>
+          </select>
+        </div>
+        <div>
+          <label>セクションを選択</label>
+          <select id="sectionSelect">
+            <option value="">セクションを選択してください</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>トライアル目標回数</label>
+          <input id="trialGoal" type="number" value="10" min="1" max="30">
+        </div>
+        <div>
+          <label>現在の回数</label>
+          <div id="trialCountDisplay" style="font-size:13px; font-weight:600;">0 回</div>
+        </div>
+      </div>
+
+      <label style="margin-top:10px;">トライアル入力</label>
+      <div class="row" style="margin-top:4px;">
+        <div style="flex:1; min-width:120px;">
+          <button class="btn btn-success" style="width:100%;" onclick="addTrial(true)">成功（◯）</button>
+        </div>
+        <div style="flex:1; min-width:120px;">
+          <button class="btn btn-fail" style="width:100%;" onclick="addTrial(false)">失敗（✕）</button>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">現在の成功率</div>
+          <div class="kpi-value" id="kpiRate">0%</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="kpiProgress"></div>
+          </div>
+          <div class="kpi-sub" id="kpiDetail">成功 0 回 / 0 回中</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">トライアル状況</div>
+          <div class="kpi-value" id="kpiCount">0 / 0</div>
+          <div class="kpi-sub">目標回数に対する現時点の進み具合を表示します。</div>
+        </div>
+      </div>
+
+      <button class="btn btn-save" onclick="saveSession()">このセッションを保存</button>
+    </div>
+
+    <!-- ③ 過去データ & フィルタ -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="emoji">📋</span>
+          <span>③ 過去データ & フィルタ</span>
+        </div>
+      </div>
+      <div class="card-description">
+        生徒・セクションで絞り込んで、過去のセッション一覧やグラフを表示・リセットできます。
+      </div>
+
+      <div class="row">
+        <div>
+          <label>表示する生徒</label>
+          <select id="filterChild">
+            <option value="">全ての生徒</option>
+          </select>
+        </div>
+        <div>
+          <label>セクション</label>
+          <select id="filterSection">
+            <option value="">全てのセクション</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+        <button class="btn btn-small btn-primary" onclick="applyFilter()">フィルタ適用 & グラフ更新</button>
+        <button class="btn btn-small btn-danger" onclick="deleteFilteredData()">フィルタ条件のデータを削除</button>
+      </div>
+
+      <h3 style="font-size:13px; margin-top:12px; margin-bottom:4px;">セッション一覧</h3>
+      <div id="sessionList"></div>
+    </div>
+
+    <!-- グラフ：タイムライン -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="emoji">📈</span>
+          <span>セッションごとの成功率の推移</span>
+        </div>
+      </div>
+      <div class="card-description">
+        選択した生徒・セクションの「1回ごとのセッション」の成功率の変化です。
+      </div>
+      <div id="currentGraphRate" style="font-size:12px; margin:0 0 4px 0; color:var(--text-main); font-weight:500;">
+        最新セッションの成功率：- %
+      </div>
+      <canvas id="sessionChart" height="210"></canvas>
+    </div>
+
+    <!-- グラフ：生徒別サマリー -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="emoji">🧑‍🎓</span>
+          <span>生徒別サマリー</span>
+        </div>
+      </div>
+      <div class="card-description">
+        現在のフィルタ条件に該当するデータを、生徒ごとにまとめて表示します。
+        平均成功率と「1セッションあたりの伸び（成長スピード）」を確認できます。
+      </div>
+      <canvas id="studentChart" height="220"></canvas>
+      <div id="studentSummary"></div>
+    </div>
+
+  </div> <!-- /app-container -->
+
+<script>
+  let currentTrials = [];
+  let sessions = [];
+  let students = [];
+  let sections = [];
+  let sessionChart = null;
+  let studentChart = null;
+
+  const STORAGE_KEY_SESSIONS = "ABA_SESSIONS_V1";
+  const STORAGE_KEY_STUDENTS = "ABA_STUDENTS_V1";
+  const STORAGE_KEY_SECTIONS = "ABA_SECTIONS_V1";
+
+  function loadFromStorage() {
+    try {
+      const rawSessions = localStorage.getItem(STORAGE_KEY_SESSIONS);
+      sessions = rawSessions ? JSON.parse(rawSessions) : [];
+    } catch (e) { sessions = []; }
+    try {
+      const rawStudents = localStorage.getItem(STORAGE_KEY_STUDENTS);
+      students = rawStudents ? JSON.parse(rawStudents) : [];
+    } catch (e) { students = []; }
+    try {
+      const rawSections = localStorage.getItem(STORAGE_KEY_SECTIONS);
+      sections = rawSections ? JSON.parse(rawSections) : [];
+    } catch (e) { sections = []; }
+    cleanupOrphanSessions();
+  }
+
+  function saveSessionsToStorage() {
+    localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(sessions));
+  }
+  function saveStudentsToStorage() {
+    localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(students));
+  }
+  function saveSectionsToStorage() {
+    localStorage.setItem(STORAGE_KEY_SECTIONS, JSON.stringify(sections));
+  }
+
+  function cleanupOrphanSessions() {
+    const validChildren = new Set(students);
+    const validSections = new Set(sections);
+    const before = sessions.length;
+    sessions = sessions.filter(s => validChildren.has(s.child) && validSections.has(s.section));
+    if (sessions.length !== before) {
+      saveSessionsToStorage();
+    }
+  }
+
+  function addStudent() {
+    const name = document.getElementById("newStudentName").value.trim();
+    if (!name) { alert("生徒名を入力してください。"); return; }
+    if (!students.includes(name)) {
+      students.push(name);
+      students.sort();
+      saveStudentsToStorage();
+      document.getElementById("newStudentName").value = "";
+      renderStudentMaster();
+      renderChildSelects();
+    } else {
+      alert("既に登録済みの生徒です。");
+    }
+  }
+
+  function addSection() {
+    const name = document.getElementById("newSectionName").value.trim();
+    if (!name) { alert("セクション名を入力してください。"); return; }
+    if (!sections.includes(name)) {
+      sections.push(name);
+      sections.sort();
+      saveSectionsToStorage();
+      document.getElementById("newSectionName").value = "";
+      renderSectionMaster();
+      renderSectionSelects();
+    } else {
+      alert("既に登録済みのセクションです。");
+    }
+  }
+
+  function deleteStudentMaster() {
+    const name = document.getElementById("deleteStudentSelect").value;
+    if (!name) { alert("削除する生徒を選択してください。"); return; }
+    const count = sessions.filter(s => s.child === name).length;
+    const ok = confirm(
+      `生徒「${name}」を削除します。
+この生徒に紐づくセッションデータ ${count} 件も削除されます。
+よろしいですか？`
+    );
+    if (!ok) return;
+
+    students = students.filter(s => s !== name);
+    saveStudentsToStorage();
+
+    sessions = sessions.filter(s => s.child !== name);
+    saveSessionsToStorage();
+
+    cleanupOrphanSessions();
+
+    renderStudentMaster();
+    renderChildSelects();
+    renderSessionList();
+    updateSessionChart();
+    updateStudentChart();
+
+    document.getElementById("deleteStudentSelect").value = "";
+    document.getElementById("childSelect").value = "";
+    document.getElementById("filterChild").value = "";
+
+    alert("生徒と、その生徒に紐づくデータを削除しました。");
+  }
+
+  function deleteSectionMaster() {
+    const name = document.getElementById("deleteSectionSelect").value;
+    if (!name) { alert("削除するセクションを選択してください。"); return; }
+    const count = sessions.filter(s => s.section === name).length;
+    const ok = confirm(
+      `セクション「${name}」を削除します。
+このセクションに紐づくセッションデータ ${count} 件も削除されます。
+よろしいですか？`
+    );
+    if (!ok) return;
+
+    sections = sections.filter(s => s !== name);
+    saveSectionsToStorage();
+
+    sessions = sessions.filter(s => s.section !== name);
+    saveSessionsToStorage();
+
+    cleanupOrphanSessions();
+
+    renderSectionMaster();
+    renderSectionSelects();
+    renderSessionList();
+    updateSessionChart();
+    updateStudentChart();
+
+    document.getElementById("deleteSectionSelect").value = "";
+    document.getElementById("sectionSelect").value = "";
+    document.getElementById("filterSection").value = "";
+
+    alert("セクションと、そのセクションに紐づくデータを削除しました。");
+  }
+
+  function renderStudentMaster() {
+    const el = document.getElementById("studentList");
+    if (students.length === 0) { el.textContent = "まだ登録されていません。"; return; }
+    el.innerHTML = students.map(s => `<span class="pill">${s}</span>`).join(" ");
+  }
+
+  function renderSectionMaster() {
+    const el = document.getElementById("sectionList");
+    if (sections.length === 0) { el.textContent = "まだ登録されていません。"; return; }
+    el.innerHTML = sections.map(s => `<span class="pill">${s}</span>`).join(" ");
+  }
+
+  function renderChildSelects() {
+    const childSelect = document.getElementById("childSelect");
+    const filterChild = document.getElementById("filterChild");
+    const deleteStudentSelect = document.getElementById("deleteStudentSelect");
+
+    childSelect.innerHTML = '<option value="">生徒を選択してください</option>';
+    filterChild.innerHTML = '<option value="">全ての生徒</option>';
+    deleteStudentSelect.innerHTML = '<option value="">生徒を選択</option>';
+
+    students.forEach(s => {
+      const opt1 = document.createElement("option");
+      opt1.value = s; opt1.textContent = s; childSelect.appendChild(opt1);
+      const opt2 = document.createElement("option");
+      opt2.value = s; opt2.textContent = s; filterChild.appendChild(opt2);
+      const opt3 = document.createElement("option");
+      opt3.value = s; opt3.textContent = s; deleteStudentSelect.appendChild(opt3);
+    });
+  }
+
+  function renderSectionSelects() {
+    const sectionSelect = document.getElementById("sectionSelect");
+    const filterSection = document.getElementById("filterSection");
+    const deleteSectionSelect = document.getElementById("deleteSectionSelect");
+
+    sectionSelect.innerHTML = '<option value="">セクションを選択してください</option>';
+    filterSection.innerHTML = '<option value="">全てのセクション</option>';
+    deleteSectionSelect.innerHTML = '<option value="">セクションを選択してください</option>';
+
+    sections.forEach(s => {
+      const opt1 = document.createElement("option");
+      opt1.value = s; opt1.textContent = s; sectionSelect.appendChild(opt1);
+      const opt2 = document.createElement("option");
+      opt2.value = s; opt2.textContent = s; filterSection.appendChild(opt2);
+      const opt3 = document.createElement("option");
+      opt3.value = s; opt3.textContent = s; deleteSectionSelect.appendChild(opt3);
+    });
+  }
+
+  function addTrial(isSuccess) {
+    currentTrials.push(isSuccess);
+    updateSessionStats();
+  }
+
+  function updateSessionStats() {
+    const total = currentTrials.length;
+    const success = currentTrials.filter(t => t).length;
+    const rate = total === 0 ? 0 : Math.round((success / total) * 100);
+
+    document.getElementById("trialCountDisplay").textContent = total + " 回";
+
+    const kpiRate = document.getElementById("kpiRate");
+    const kpiProgress = document.getElementById("kpiProgress");
+    const kpiDetail = document.getElementById("kpiDetail");
+    const kpiCount = document.getElementById("kpiCount");
+    const goalRaw = document.getElementById("trialGoal").value;
+    const goal = goalRaw ? parseInt(goalRaw, 10) : 0;
+
+    kpiRate.textContent = rate + "%";
+    kpiProgress.style.width = rate + "%";
+    kpiDetail.textContent = `成功 ${success} 回 / ${total} 回中`;
+
+    if (goal > 0) {
+      kpiCount.textContent = `${total} / ${goal}`;
+    } else {
+      kpiCount.textContent = `${total} / -`;
+    }
+  }
+
+  function saveSession() {
+    const child = document.getElementById("childSelect").value;
+    const section = document.getElementById("sectionSelect").value;
+
+    if (!child) { alert("生徒を選択してください。"); return; }
+    if (!section) { alert("セクションを選択してください。"); return; }
+    if (currentTrials.length === 0) {
+      alert("少なくとも1回はトライアルを入力してください。"); return;
+    }
+
+    const total = currentTrials.length;
+    const success = currentTrials.filter(t => t).length;
+    const rate = total === 0 ? 0 : Math.round((success / total) * 100);
+    const now = new Date();
+
+    const session = {
+      id: Date.now(),
+      child,
+      section,
+      total,
+      success,
+      rate,
+      datetime: now.toISOString()
+    };
+
+    sessions.push(session);
+    saveSessionsToStorage();
+    currentTrials = [];
+    updateSessionStats();
+    document.getElementById("trialCountDisplay").textContent = "0 回";
+
+    renderSessionList();
+    updateSessionChart();
+    updateStudentChart();
+
+    alert("セッションを保存しました。");
+  }
+
+  function applyFilter() {
+    renderSessionList();
+    updateSessionChart();
+    updateStudentChart();
+  }
+
+  function getFilteredSessions() {
+    const fChild = document.getElementById("filterChild").value;
+    const fSection = document.getElementById("filterSection").value;
+
+    return sessions.filter(s => {
+      const childOk = fChild ? s.child === fChild : true;
+      const sectOk = fSection ? s.section === fSection : true;
+      return childOk && sectOk;
+    }).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  }
+
+  function deleteFilteredData() {
+    const fChild = document.getElementById("filterChild").value;
+    const fSection = document.getElementById("filterSection").value;
+
+    if (!fChild && !fSection) {
+      alert("削除する場合は、少なくとも生徒を選択してください。");
+      return;
+    }
+
+    const targetSessions = getFilteredSessions();
+    if (targetSessions.length === 0) {
+      alert("削除対象のデータがありません。");
+      return;
+    }
+
+    const conditionText = fSection
+      ? `生徒「${fChild}」× セクション「${fSection}」`
+      : `生徒「${fChild}」の全セクション`;
+
+    const ok = confirm(
+      conditionText + " のデータを " +
+      targetSessions.length + " 件削除します。よろしいですか？"
+    );
+    if (!ok) return;
+
+    sessions = sessions.filter(s => {
+      const childMatch = fChild ? s.child === fChild : true;
+      const sectMatch = fSection ? s.section === fSection : true;
+      return !(childMatch && sectMatch);
+    });
+
+    saveSessionsToStorage();
+    renderSessionList();
+    updateSessionChart();
+    updateStudentChart();
+    alert("削除が完了しました。");
+  }
+
+  function renderSessionList() {
+    const listEl = document.getElementById("sessionList");
+    const filtered = getFilteredSessions();
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = "<div style='font-size:12px;color:#666;'>該当するセッションがありません。</div>";
+      return;
+    }
+
+    listEl.innerHTML = "";
+    filtered.forEach(s => {
+      const d = new Date(s.datetime);
+      const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+
+      const div = document.createElement("div");
+      div.className = "session-list-item";
+      div.innerHTML = `
+        <div class="session-meta">
+          <div>
+            <span class="tag">${s.child}</span>
+            <span class="tag">${s.section}</span>
+          </div>
+          <div style="font-size:11px; color:#999;">${dateStr}</div>
+        </div>
+        <div class="session-main">
+          成功 ${s.success} / ${s.total} 回（${s.rate}%）
+        </div>
+      `;
+      listEl.appendChild(div);
+    });
+  }
+
+  function updateSessionChart() {
+    const ctx = document.getElementById("sessionChart").getContext("2d");
+    const filtered = getFilteredSessions();
+
+    const labels = filtered.map(s => {
+      const d = new Date(s.datetime);
+      return `${d.getMonth()+1}/${d.getDate()}`;
+    });
+    const data = filtered.map(s => s.rate);
+
+    const currentLabel = document.getElementById("currentGraphRate");
+    if (!filtered.length) {
+      currentLabel.textContent = "最新セッションの成功率：- %";
+    } else {
+      const lastRate = filtered[filtered.length - 1].rate;
+      currentLabel.textContent = `最新セッションの成功率：${lastRate}%`;
+    }
+
+    if (sessionChart) {
+      sessionChart.destroy();
+    }
+
+    sessionChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "成功率（%）",
+          data,
+          fill: false,
+          tension: 0.25
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: true }
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 20 }
+          }
+        }
+      }
+    });
+  }
+
+  function updateStudentChart() {
+    const ctx = document.getElementById("studentChart").getContext("2d");
+    const filtered = getFilteredSessions();
+
+    const byChild = {};
+    filtered.forEach(s => {
+      if (!byChild[s.child]) byChild[s.child] = [];
+      byChild[s.child].push(s);
+    });
+
+    const labels = [];
+    const avgRates = [];
+    const speeds = [];
+
+    Object.keys(byChild).forEach(child => {
+      const sess = byChild[child].sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
+      const n = sess.length;
+      const sum = sess.reduce((acc, cur) => acc + cur.rate, 0);
+      const avg = n === 0 ? 0 : Math.round(sum / n);
+
+      const first = sess[0].rate;
+      const last = sess[n-1].rate;
+      const delta = last - first;
+      const speed = n > 1 ? (delta / (n-1)) : 0;
+
+      labels.push(child);
+      avgRates.push(avg);
+      speeds.push(Math.round(speed * 10) / 10);
+    });
+
+    if (studentChart) {
+      studentChart.destroy();
+    }
+
+    studentChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "平均成功率（%）", data: avgRates },
+          { label: "成長スピード（1セッションあたりの変化）", data: speeds }
+        ]
+      },
+      options: {
+        plugins: {
+          legend: { display: true }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            suggestedMax: 100
+          }
+        }
+      }
+    });
+
+    const summaryEl = document.getElementById("studentSummary");
+    if (labels.length === 0) {
+      summaryEl.innerHTML = "<div style='font-size:12px;color:#666;margin-top:8px;'>該当するデータがありません。</div>";
+      return;
+    }
+
+    let html = '<table class="summary-table"><thead><tr><th>生徒</th><th>セッション数</th><th>平均成功率（%）</th><th>最初の成功率</th><th>最新の成功率</th><th>成長スピード</th></tr></thead><tbody>';
+    Object.keys(byChild).forEach((child, idx) => {
+      const sess = byChild[child].sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
+      const n = sess.length;
+      const first = sess[0].rate;
+      const last = sess[n-1].rate;
+      const speed = speeds[idx];
+      html += `<tr>
+        <td>${child}</td>
+        <td>${n}</td>
+        <td>${avgRates[idx]}</td>
+        <td>${first}</td>
+        <td>${last}</td>
+        <td>${speed}</td>
+      </tr>`;
+    });
+    html += "</tbody></table>";
+    summaryEl.innerHTML = html;
+  }
+
+  loadFromStorage();
+  renderStudentMaster();
+  renderSectionMaster();
+  renderChildSelects();
+  renderSectionSelects();
+  renderSessionList();
+  updateSessionStats();
+  updateSessionChart();
+  updateStudentChart();
+</script>
+
+</body>
+</html>
